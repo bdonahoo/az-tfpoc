@@ -26,7 +26,7 @@ module "compute" {
 }
 module "storage" {
   source     = "./modules/storage"
-  depends_on    = [module.networking]
+  depends_on = [module.networking]
   rg_name    = module.networking.resource-group-name
   region     = var.region
   subnet-ids = module.networking.subnet-ids

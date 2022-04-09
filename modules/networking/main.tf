@@ -23,19 +23,9 @@ resource "azurerm_subnet" "tf-poc-vnet-subnets" {
   address_prefixes     = ["${element(var.subnet_address_space, count.index)}"]
 }
 # create nics for the VMs in sub1
-resource "azurerm_network_interface" "rhel01-nic" {
-  name                = "rhel01-nic"
-  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
-  location            = var.region
-  resource_group_name = var.rg_name
-  ip_configuration {
-    name                          = "ipconfig1"
-    subnet_id                     = azurerm_subnet.tf-poc-vnet-subnets[0].id
-    private_ip_address_allocation = "Dynamic"
-  }
-}
-resource "azurerm_network_interface" "rhel02-nic" {
-  name                = "rhel02-nic"
+resource "azurerm_network_interface" "rhel-nics" {
+  count               = 2
+  name                = "rhel0${count.index + 1}-nic"
   depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
@@ -123,7 +113,7 @@ resource "azurerm_public_ip" "frontend-pip" {
   resource_group_name = var.rg_name
   location            = var.region
   allocation_method   = "Static"
-  sku = "Standard"
+  sku                 = "Standard"
 }
 
 # load balancer

@@ -23,16 +23,16 @@ resource "azurerm_key_vault" "poc-kv" {
   sku_name = "standard"
 
   access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azurerm_client_config.current.object_id
-    key_permissions = ["Get",]
-    secret_permissions = ["Get","Set",]
-    storage_permissions = ["Get",]
+    tenant_id           = data.azurerm_client_config.current.tenant_id
+    object_id           = data.azurerm_client_config.current.object_id
+    key_permissions     = ["Get", ]
+    secret_permissions  = ["Backup", "Delete", "Get", "List", "Purge", "Recover", "Restore", "Set", ]
+    storage_permissions = ["Get", ]
   }
 }
 resource "azurerm_key_vault_secret" "vm-admin-secret" {
   name         = "vm-admin-credentials"
-  depends_on = [azurerm_key_vault.poc-kv]
+  depends_on   = [azurerm_key_vault.poc-kv]
   content_type = var.vm_user
   value        = random_string.vm-password.result
   key_vault_id = azurerm_key_vault.poc-kv.id
@@ -40,9 +40,10 @@ resource "azurerm_key_vault_secret" "vm-admin-secret" {
 
 # availability set modified from hashicorp docs example 
 resource "azurerm_availability_set" "rhel_availability_set" {
-  name                = "rhel-aset"
-  location            = var.region
-  resource_group_name = var.rg_name
+  name                        = "rhel-aset"
+  location                    = var.region
+  resource_group_name         = var.rg_name
+  platform_fault_domain_count = 2
 }
 # 2 rhel boxes in sub1
 resource "azurerm_virtual_machine" "rhel01" {
@@ -56,7 +57,7 @@ resource "azurerm_virtual_machine" "rhel01" {
   storage_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
-    sku       = "8.3"
+    sku       = "7-LVM"
     version   = "latest"
   }
   storage_os_disk {
@@ -86,7 +87,7 @@ resource "azurerm_virtual_machine" "rhel02" {
   storage_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
-    sku       = "8.3"
+    sku       = "7-LVM"
     version   = "latest"
   }
   storage_os_disk {
@@ -114,7 +115,7 @@ resource "azurerm_virtual_machine" "apache" {
   storage_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
-    sku       = "8.3"
+    sku       = "7-LVM"
     version   = "latest"
   }
   storage_os_disk {
@@ -122,7 +123,6 @@ resource "azurerm_virtual_machine" "apache" {
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
-    disk_size_gb      = 32
   }
   os_profile {
     computer_name  = "apache"
@@ -143,7 +143,7 @@ resource "azurerm_virtual_machine_extension" "apache-install" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "sudo yum install httpd && sudo systemctl enable httpd && sudo systemctl start httpd"
+        "commandToExecute": "sudo yum install httpd -y && sudo systemctl enable httpd && sudo systemctl start httpd"
     }
 SETTINGS
 }
