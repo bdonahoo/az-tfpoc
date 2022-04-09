@@ -143,7 +143,7 @@ resource "azurerm_virtual_machine_extension" "apache-install" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "sudo yum install httpd -y && sudo systemctl enable httpd && sudo systemctl start httpd"
+        "commandToExecute": "sudo yum install httpd -y && sudo systemctl enable httpd && sudo systemctl start httpd && firewall-cmd --permanent --zone=public --add-port=80/tcp && firewall-cmd --reload"
     }
 SETTINGS
 }

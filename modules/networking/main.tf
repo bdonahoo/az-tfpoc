@@ -78,8 +78,8 @@ resource "azurerm_network_security_group" "sub1-nsg" {
   }
 }
 # nsg for sub2
-resource "azurerm_network_security_group" "sub2-nsg" {
-  name                = "sub2-nsg"
+resource "azurerm_network_security_group" "sub3-nsg" {
+  name                = "sub3-nsg"
   depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
@@ -89,22 +89,31 @@ resource "azurerm_network_security_group" "sub2-nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_port_range          = "80" # http
-    destination_port_range     = "*"
+    source_port_range          = "*" # http
+    destination_port_range     = "80"
     source_address_prefix      = "AzureLoadBalancer"
     destination_address_prefix = "*"
   }
-  security_rule {
-    name                       = "deny_all"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "Internet"
-    destination_address_prefix = "*"
-  }
+  #security_rule {
+  #  name                       = "deny_all"
+  #  priority                   = 4096
+  #  direction                  = "Inbound"
+  #  access                     = "Deny"
+  #  protocol                   = "*"
+  #  source_port_range          = "*"
+  #  destination_port_range     = "*"
+  #  source_address_prefix      = "Internet"
+  #  destination_address_prefix = "*"
+  #}
+}
+# associate subnets with nsgs
+resource "azurerm_subnet_network_security_group_association" "sub1-nsg-association" {
+  subnet_id                 = azurerm_subnet.tf-poc-vnet-subnets[0].id
+  network_security_group_id = azurerm_network_security_group.sub1-nsg.id
+}
+resource "azurerm_subnet_network_security_group_association" "sub3-nsg-association" {
+  subnet_id                 = azurerm_subnet.tf-poc-vnet-subnets[2].id
+  network_security_group_id = azurerm_network_security_group.sub3-nsg.id
 }
 # load balancer public ip
 resource "azurerm_public_ip" "frontend-pip" {
@@ -156,4 +165,6 @@ resource "azurerm_lb_rule" "apache-route" {
   frontend_port                  = 80
   backend_port                   = 80
   frontend_ip_configuration_name = azurerm_lb.alb.frontend_ip_configuration[0].name
+  probe_id = azurerm_lb_probe.http-probe.id
+  backend_address_pool_ids = [azurerm_lb_backend_address_pool.apache-backend.id]
 }
