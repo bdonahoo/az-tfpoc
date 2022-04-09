@@ -1,10 +1,10 @@
 # region to deploy into
 variable "region" {
-  default = "East US"
+  default = "West US"
 }
 # resource group name
 variable "rg_name" {
-  default = "az-tf-poc"
+  default = "az-tf-poc2"
 }
 # address space for the vnet
 variable "vnet_address_space" {

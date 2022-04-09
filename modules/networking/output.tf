@@ -10,4 +10,7 @@ output "rhel02-nic-id" {
 output "apache-nic-id" {
   value = azurerm_network_interface.apache-nic.id
 }
+output "subnet-ids" {
+  value = [azurerm_subnet.tf-poc-vnet-subnets[0].id, azurerm_subnet.tf-poc-vnet-subnets[1].id, azurerm_subnet.tf-poc-vnet-subnets[2].id, azurerm_subnet.tf-poc-vnet-subnets[3].id]
+}
 

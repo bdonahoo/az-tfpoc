@@ -7,6 +7,7 @@ resource "azurerm_resource_group" "az-tf-poc" {
 # configure vnet
 resource "azurerm_virtual_network" "tf-poc-vnet" {
   name                = "tf-poc-vnet"
+  depends_on          = [azurerm_resource_group.az-tf-poc]
   resource_group_name = var.rg_name
   location            = var.region
   address_space       = var.vnet_address_space
@@ -15,6 +16,7 @@ resource "azurerm_virtual_network" "tf-poc-vnet" {
 # borrowed & modified from https://stackoverflow.com/questions/61900722/creating-subnet-in-a-loop-in-terraform
 resource "azurerm_subnet" "tf-poc-vnet-subnets" {
   name                 = "Sub${count.index + 1}" #increment the count so the subnets are named correctly!
+  depends_on           = [azurerm_virtual_network.tf-poc-vnet]
   count                = 4
   resource_group_name  = var.rg_name
   virtual_network_name = "tf-poc-vnet"
@@ -23,6 +25,7 @@ resource "azurerm_subnet" "tf-poc-vnet-subnets" {
 # create nics for the VMs in sub1
 resource "azurerm_network_interface" "rhel01-nic" {
   name                = "rhel01-nic"
+  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
   ip_configuration {
@@ -33,6 +36,7 @@ resource "azurerm_network_interface" "rhel01-nic" {
 }
 resource "azurerm_network_interface" "rhel02-nic" {
   name                = "rhel02-nic"
+  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
   ip_configuration {
@@ -44,6 +48,7 @@ resource "azurerm_network_interface" "rhel02-nic" {
 # nic for the apache box in sub3
 resource "azurerm_network_interface" "apache-nic" {
   name                = "apache-nic"
+  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
   ip_configuration {
@@ -56,6 +61,7 @@ resource "azurerm_network_interface" "apache-nic" {
 # nsg for sub1
 resource "azurerm_network_security_group" "sub1-nsg" {
   name                = "sub1-nsg"
+  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
   security_rule {
@@ -84,6 +90,7 @@ resource "azurerm_network_security_group" "sub1-nsg" {
 # nsg for sub2
 resource "azurerm_network_security_group" "sub2-nsg" {
   name                = "sub2-nsg"
+  depends_on          = [azurerm_subnet.tf-poc-vnet-subnets]
   location            = var.region
   resource_group_name = var.rg_name
   security_rule {
@@ -105,23 +112,27 @@ resource "azurerm_network_security_group" "sub2-nsg" {
     protocol                   = "*"
     source_port_range          = "*"
     destination_port_range     = "*"
-    source_address_prefix      = "*"
+    source_address_prefix      = "Internet"
     destination_address_prefix = "*"
   }
 }
 # load balancer public ip
 resource "azurerm_public_ip" "frontend-pip" {
   name                = "frontend-pip"
+  depends_on          = [azurerm_resource_group.az-tf-poc]
   resource_group_name = var.rg_name
   location            = var.region
   allocation_method   = "Static"
+  sku = "Standard"
 }
 
 # load balancer
 resource "azurerm_lb" "alb" {
   name                = "poc-alb"
-  location            = "East US"
+  depends_on          = [azurerm_public_ip.frontend-pip]
+  location            = var.region
   resource_group_name = var.rg_name
+  sku                 = "Standard"
 
   frontend_ip_configuration {
     name                 = "frontend"
@@ -129,22 +140,26 @@ resource "azurerm_lb" "alb" {
   }
 }
 # For the alb backend, first create a probe, then a pool, then fill the pool, then link it with a rule
-resource "azurerm_lb_probe" "example" {
+resource "azurerm_lb_probe" "http-probe" {
+  depends_on      = [azurerm_lb.alb]
   loadbalancer_id = azurerm_lb.alb.id
   name            = "http-probe"
   port            = 80
 }
 resource "azurerm_lb_backend_address_pool" "apache-backend" {
+  depends_on      = [azurerm_lb.alb]
   loadbalancer_id = azurerm_lb.alb.id
   name            = "alb-backend"
 }
 resource "azurerm_lb_backend_address_pool_address" "apache-pool-membership" {
+  depends_on              = [azurerm_lb_backend_address_pool.apache-backend]
   name                    = "apache"
   backend_address_pool_id = azurerm_lb_backend_address_pool.apache-backend.id
   virtual_network_id      = azurerm_virtual_network.tf-poc-vnet.id
   ip_address              = var.apache-private-ip
 }
 resource "azurerm_lb_rule" "apache-route" {
+  depends_on                     = [azurerm_lb_backend_address_pool_address.apache-pool-membership]
   loadbalancer_id                = azurerm_lb.alb.id
   name                           = "apache-route"
   protocol                       = "Tcp"

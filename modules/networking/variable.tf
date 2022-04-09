@@ -7,5 +7,5 @@ variable "vnet_address_space" {}
 # address spaces for the 4 subnets
 variable "subnet_address_space" {}
 variable "apache-private-ip" {
-  default = "10.0.2.1"
+  default = "10.0.2.4"
 }
