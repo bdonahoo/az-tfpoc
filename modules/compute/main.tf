@@ -18,7 +18,7 @@ resource "azurerm_key_vault" "poc-kv" {
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   soft_delete_retention_days  = 7
   purge_protection_enabled    = false
-  sku_name = "standard"
+  sku_name                    = "standard"
   access_policy {
     tenant_id           = data.azurerm_client_config.current.tenant_id
     object_id           = data.azurerm_client_config.current.object_id
@@ -128,6 +128,14 @@ resource "azurerm_virtual_machine" "apache" {
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
+  }
+  storage_data_disk {
+    name              = "apache-data"
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    managed_disk_type = "Standard_LRS"
+    disk_size_gb      = 32
+    lun               = 1
   }
   os_profile {
     computer_name  = "apache"

@@ -2,12 +2,17 @@
  A simple terraform deployment to Azure. The following resources are defined:
  - One resource group, "az-tf-poc"
  - One vnet, "tf-poc-vnet" with five subnets:
+   - Sub1
+   - Sub2
+   - Sub3
+   - Sub4
+   - AzureBastionSubnet
  - Three RHEL virtual machines:
    - Two DS1v2 RHEL machines in an availability set in subnet 1, each with 256gb disks
-   - One DS1v2 RHEL machine in subnet 3 with Apache listening on port 80, with a 64gb OS disk and an additional 32gb data disk
- - An Azure Bastion host for connecting to all three machines
+   - One DS1v2 RHEL machine in subnet Sub3 with Apache listening on port 80, with a 64gb OS disk and an additional 32gb data disk
+ - An Azure Bastion host for securely connecting to all three machines from the Azure Portal
  - An Azure Key Vault for storing the virtual machine admin credentials
- - An Azure Load Balancer with a public IP, listening on port 80 and forwarding requests to the Apache server on subnet 3
+ - An Azure Load Balancer with a public IP, listening on port 80 and forwarding requests to the Apache server on subnet Sub3
  - Network security groups associated with subnets:
    - Sub1 for the RHEL machines
    - Sub3 for the RHEL Apache server
