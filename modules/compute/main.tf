@@ -4,7 +4,6 @@ resource "random_string" "vm-password" {
   special          = true
   override_special = "/@!$"
 }
-
 # kv names must be globally unique; generate a random one
 resource "random_id" "kv-name" {
   byte_length = 4
@@ -19,9 +18,7 @@ resource "azurerm_key_vault" "poc-kv" {
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   soft_delete_retention_days  = 7
   purge_protection_enabled    = false
-
   sku_name = "standard"
-
   access_policy {
     tenant_id           = data.azurerm_client_config.current.tenant_id
     object_id           = data.azurerm_client_config.current.object_id
@@ -42,7 +39,6 @@ resource "azurerm_bastion_host" "bastionhost" {
   name                = "bastionhost"
   location            = var.region
   resource_group_name = var.rg_name
-
   ip_configuration {
     name                 = "bastionconfig"
     subnet_id            = var.bastion-subnet-id
@@ -64,7 +60,6 @@ resource "azurerm_virtual_machine" "rhel01" {
   network_interface_ids = [var.rhel01-nic-id]
   vm_size               = var.machine-size
   availability_set_id   = azurerm_availability_set.rhel_availability_set.id
-
   storage_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
@@ -94,7 +89,6 @@ resource "azurerm_virtual_machine" "rhel02" {
   network_interface_ids = [var.rhel02-nic-id]
   vm_size               = var.machine-size
   availability_set_id   = azurerm_availability_set.rhel_availability_set.id
-
   storage_image_reference {
     publisher = "RedHat"
     offer     = "RHEL"
@@ -144,7 +138,35 @@ resource "azurerm_virtual_machine" "apache" {
     disable_password_authentication = false
   }
 }
-# install apache server
+# allow password auth for ssh on the rhel boxes
+# taken from ubuntu forums here https://askubuntu.com/questions/988845/how-to-set-passwordauthentication-as-yes-through-automation
+resource "azurerm_virtual_machine_extension" "rhel01-password-auth" {
+  name                 = "password-auth-ssh"
+  virtual_machine_id   = azurerm_virtual_machine.rhel01.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+
+  settings = <<SETTINGS
+    {
+        "commandToExecute": "sudo sed -i \"/^[^#]*PasswordAuthentication[[:space:]]no/c\\PasswordAuthentication yes\" /etc/ssh/sshd_config && sudo service sshd restart"
+    }
+SETTINGS
+}
+resource "azurerm_virtual_machine_extension" "rhel02-password-auth" {
+  name                 = "password-auth-ssh"
+  virtual_machine_id   = azurerm_virtual_machine.rhel02.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+
+  settings = <<SETTINGS
+    {
+        "commandToExecute": "sudo sed -i \"/^[^#]*PasswordAuthentication[[:space:]]no/c\\PasswordAuthentication yes\" /etc/ssh/sshd_config && sudo service sshd restart"
+    }
+SETTINGS
+}
+# install apache server and allow password auth for ssh on the apache box
 resource "azurerm_virtual_machine_extension" "apache-install" {
   name                 = "apache-install"
   virtual_machine_id   = azurerm_virtual_machine.apache.id
@@ -154,7 +176,7 @@ resource "azurerm_virtual_machine_extension" "apache-install" {
 
   settings = <<SETTINGS
     {
-        "commandToExecute": "sudo yum install httpd -y && sudo systemctl enable httpd && sudo systemctl start httpd && firewall-cmd --permanent --zone=public --add-port=80/tcp && firewall-cmd --reload"
+        "commandToExecute": "sudo yum install httpd -y && sudo systemctl enable httpd && sudo systemctl start httpd && firewall-cmd --permanent --zone=public --add-port=80/tcp && firewall-cmd --reload && sudo sed -i \"/^[^#]*PasswordAuthentication[[:space:]]no/c\\PasswordAuthentication yes\" /etc/ssh/sshd_config && sudo service sshd restart" 
     }
 SETTINGS
 }

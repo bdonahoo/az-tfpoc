@@ -68,8 +68,8 @@ resource "azurerm_network_security_group" "sub1-nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_port_range          = "22" #ssh
-    destination_port_range     = "*"
+    source_port_range          = "*"
+    destination_port_range     = "22"                      #ssh
     source_address_prefix      = var.vnet_address_space[0] # open to vnet
     destination_address_prefix = "*"
   }
@@ -120,7 +120,7 @@ resource "azurerm_network_security_group" "bastion-nsg" {
   location            = var.region
   resource_group_name = var.rg_name
   # bastion subnet NSGs have a number of required security rules https://docs.microsoft.com/en-us/azure/bastion/bastion-nsg
-    security_rule {
+  security_rule {
     name                       = "AllowHttpsInbound"
     priority                   = 120
     direction                  = "Inbound"
@@ -131,7 +131,7 @@ resource "azurerm_network_security_group" "bastion-nsg" {
     source_address_prefix      = "Internet"
     destination_address_prefix = "*"
   }
-    security_rule {
+  security_rule {
     name                       = "AllowGatewayManagerInbound"
     priority                   = 130
     direction                  = "Inbound"
@@ -142,7 +142,7 @@ resource "azurerm_network_security_group" "bastion-nsg" {
     source_address_prefix      = "GatewayManager"
     destination_address_prefix = "*"
   }
-    security_rule {
+  security_rule {
     name                       = "AllowAzureLoadBalancerInbound"
     priority                   = 140
     direction                  = "Inbound"
@@ -153,29 +153,29 @@ resource "azurerm_network_security_group" "bastion-nsg" {
     source_address_prefix      = "AzureLoadBalancer"
     destination_address_prefix = "*"
   }
-    security_rule {
+  security_rule {
     name                       = "AllowBastionHostCommunication"
     priority                   = 150
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "8080,5701"
+    destination_port_ranges    = [8080, 5701]
     source_address_prefix      = "VirtualNetwork"
     destination_address_prefix = "*"
   }
-    security_rule {
+  security_rule {
     name                       = "AllowSshRdpOutbound"
     priority                   = 100
     direction                  = "Outbound"
     access                     = "Allow"
     protocol                   = "*"
     source_port_range          = "*"
-    destination_port_range     = "22,3389"
+    destination_port_ranges    = [22, 3389]
     source_address_prefix      = "*"
     destination_address_prefix = "VirtualNetwork"
   }
-    security_rule {
+  security_rule {
     name                       = "AllowAzureCloudOutbound"
     priority                   = 110
     direction                  = "Outbound"
@@ -186,18 +186,18 @@ resource "azurerm_network_security_group" "bastion-nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "AzureCloud"
   }
-      security_rule {
+  security_rule {
     name                       = "AllowBastionCommunication"
     priority                   = 120
     direction                  = "Outbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "8080,5071"
+    destination_port_ranges    = [8080, 5701]
     source_address_prefix      = "VirtualNetwork"
     destination_address_prefix = "VirtualNetwork"
   }
-      security_rule {
+  security_rule {
     name                       = "AllowGetSessionCommunication"
     priority                   = 130
     direction                  = "Outbound"
