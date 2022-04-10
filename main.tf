@@ -3,6 +3,9 @@ provider "azurerm" {
     key_vault {
       purge_soft_delete_on_destroy = true
     }
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
   }
 }
 # defines rg, vnet, subnets, and nics
@@ -15,15 +18,15 @@ module "networking" {
 }
 # defines availability set and virtual machines
 module "compute" {
-  depends_on     = [module.networking]
-  source         = "./modules/compute"
-  rg_name        = module.networking.resource-group-name
-  region         = var.region
-  rhel01-nic-id  = module.networking.rhel01-nic-id
-  rhel02-nic-id  = module.networking.rhel02-nic-id
-  apache-nic-id  = module.networking.apache-nic-id
-  machine-size   = var.machine-size
-  bastion-pip-id = module.networking.bastion-pip-id
+  depends_on        = [module.networking]
+  source            = "./modules/compute"
+  rg_name           = module.networking.resource-group-name
+  region            = var.region
+  rhel01-nic-id     = module.networking.rhel01-nic-id
+  rhel02-nic-id     = module.networking.rhel02-nic-id
+  apache-nic-id     = module.networking.apache-nic-id
+  machine-size      = var.machine-size
+  bastion-pip-id    = module.networking.bastion-pip-id
   bastion-subnet-id = module.networking.bastion-subnet-id
 }
 module "storage" {

@@ -9,8 +9,8 @@ resource "azurerm_storage_account" "tf-poc-storage" {
   location                 = var.region
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  #network_rules {
-  #  default_action             = "Deny"
-  #  virtual_network_subnet_ids = var.subnet-ids
-  #}
+  network_rules {
+    default_action             = "Deny"
+    virtual_network_subnet_ids = var.subnet-ids
+  }
 }
