@@ -37,7 +37,18 @@ resource "azurerm_key_vault_secret" "vm-admin-secret" {
   value        = random_string.vm-password.result
   key_vault_id = azurerm_key_vault.poc-kv.id
 }
+# create a bastion host
+resource "azurerm_bastion_host" "bastionhost" {
+  name                = "bastionhost"
+  location            = var.region
+  resource_group_name = var.rg_name
 
+  ip_configuration {
+    name                 = "bastionconfig"
+    subnet_id            = var.bastion-subnet-id
+    public_ip_address_id = var.bastion-pip-id
+  }
+}
 # availability set modified from hashicorp docs example 
 resource "azurerm_availability_set" "rhel_availability_set" {
   name                        = "rhel-aset"

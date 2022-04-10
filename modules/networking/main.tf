@@ -3,7 +3,6 @@ resource "azurerm_resource_group" "az-tf-poc" {
   name     = var.rg_name
   location = var.region
 }
-
 # configure vnet
 resource "azurerm_virtual_network" "tf-poc-vnet" {
   name                = "tf-poc-vnet"
@@ -21,6 +20,14 @@ resource "azurerm_subnet" "tf-poc-vnet-subnets" {
   resource_group_name  = var.rg_name
   virtual_network_name = "tf-poc-vnet"
   address_prefixes     = ["${element(var.subnet_address_space, count.index)}"]
+}
+# create a subnet for bastion host
+resource "azurerm_subnet" "bastion-subnet" {
+  name                 = "AzureBastionSubnet" #increment the count so the subnets are named correctly!
+  depends_on           = [azurerm_virtual_network.tf-poc-vnet]
+  resource_group_name  = var.rg_name
+  virtual_network_name = "tf-poc-vnet"
+  address_prefixes     = ["10.0.4.0/27"]
 }
 # create nics for the VMs in sub1
 resource "azurerm_network_interface" "rhel-nics" {
@@ -89,9 +96,20 @@ resource "azurerm_network_security_group" "sub3-nsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_port_range          = "*" # http
-    destination_port_range     = "80"
+    source_port_range          = "*"
+    destination_port_range     = "*"
     source_address_prefix      = "AzureLoadBalancer"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "allow_http"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "Internet"
     destination_address_prefix = "*"
   }
   #security_rule {
@@ -118,6 +136,14 @@ resource "azurerm_subnet_network_security_group_association" "sub3-nsg-associati
 # load balancer public ip
 resource "azurerm_public_ip" "frontend-pip" {
   name                = "frontend-pip"
+  depends_on          = [azurerm_resource_group.az-tf-poc]
+  resource_group_name = var.rg_name
+  location            = var.region
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+resource "azurerm_public_ip" "bastion-pip" {
+  name                = "bastion-pip"
   depends_on          = [azurerm_resource_group.az-tf-poc]
   resource_group_name = var.rg_name
   location            = var.region
@@ -165,6 +191,6 @@ resource "azurerm_lb_rule" "apache-route" {
   frontend_port                  = 80
   backend_port                   = 80
   frontend_ip_configuration_name = azurerm_lb.alb.frontend_ip_configuration[0].name
-  probe_id = azurerm_lb_probe.http-probe.id
-  backend_address_pool_ids = [azurerm_lb_backend_address_pool.apache-backend.id]
+  probe_id                       = azurerm_lb_probe.http-probe.id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.apache-backend.id]
 }

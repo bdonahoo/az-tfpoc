@@ -10,3 +10,5 @@ variable "machine-size" {}
 variable "vm_user" {
   default = "pocadmin"
 }
+variable "bastion-pip-id" {}
+variable "bastion-subnet-id" {}

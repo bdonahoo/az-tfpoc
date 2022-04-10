@@ -13,4 +13,9 @@ output "apache-nic-id" {
 output "subnet-ids" {
   value = [azurerm_subnet.tf-poc-vnet-subnets[0].id, azurerm_subnet.tf-poc-vnet-subnets[1].id, azurerm_subnet.tf-poc-vnet-subnets[2].id, azurerm_subnet.tf-poc-vnet-subnets[3].id]
 }
-
+output "bastion-pip-id" {
+  value = azurerm_public_ip.bastion-pip.id
+}
+output "bastion-subnet-id" {
+  value = azurerm_subnet.bastion-subnet.id
+}
